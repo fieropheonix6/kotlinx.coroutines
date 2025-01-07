@@ -1,7 +1,3 @@
-/*
- * Copyright 2016-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
- */
-
 package kotlinx.coroutines
 
 import kotlinx.coroutines.internal.*
@@ -35,8 +31,8 @@ internal actual val DefaultDelay: Delay = DefaultExecutor
 
 public actual fun CoroutineScope.newCoroutineContext(context: CoroutineContext): CoroutineContext {
     val combined = coroutineContext + context
-    return if (combined !== DefaultDelay && combined[ContinuationInterceptor] == null)
-        combined + (DefaultDelay as CoroutineContext.Element) else combined
+    return if (combined !== Dispatchers.Default && combined[ContinuationInterceptor] == null)
+        combined + Dispatchers.Default else combined
 }
 
 public actual fun CoroutineContext.newCoroutineContext(addedContext: CoroutineContext): CoroutineContext {

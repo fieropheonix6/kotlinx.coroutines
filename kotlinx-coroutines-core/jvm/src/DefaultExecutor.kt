@@ -1,7 +1,3 @@
-/*
- * Copyright 2016-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
- */
-
 package kotlinx.coroutines
 
 import kotlinx.coroutines.internal.*
@@ -188,6 +184,11 @@ internal actual object DefaultExecutor : EventLoopImplBase(), Runnable {
         (this as Object).notifyAll()
     }
 
+    // User only for testing and nothing else
     internal val isThreadPresent
         get() = _thread != null
+
+    override fun toString(): String {
+        return "DefaultExecutor"
+    }
 }

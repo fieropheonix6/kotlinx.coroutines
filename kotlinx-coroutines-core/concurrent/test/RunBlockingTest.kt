@@ -1,11 +1,11 @@
-/*
- * Copyright 2016-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
- */
 package kotlinx.coroutines
 
+import kotlinx.coroutines.testing.*
 import kotlinx.coroutines.exceptions.*
 import kotlin.coroutines.*
 import kotlin.test.*
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 class RunBlockingTest : TestBase() {
 
@@ -26,7 +26,7 @@ class RunBlockingTest : TestBase() {
         expect(1)
         runBlocking {
             expect(2)
-            assertTrue(coroutineContext[ContinuationInterceptor] is EventLoop)
+            assertIs<EventLoop>(coroutineContext[ContinuationInterceptor])
             yield() // is supported!
             expect(3)
         }
@@ -175,6 +175,22 @@ class RunBlockingTest : TestBase() {
         assertFailsWith<CancellationException> {
             runBlocking(job) {
                 expectUnreached()
+            }
+        }
+    }
+
+    /** Tests that the delayed tasks scheduled on a closed `runBlocking` event loop get processed in reasonable time. */
+    @Test
+    fun testReschedulingDelayedTasks() {
+        val job = runBlocking {
+            val dispatcher = coroutineContext[ContinuationInterceptor]!!
+            GlobalScope.launch(dispatcher) {
+                delay(1.milliseconds)
+            }
+        }
+        runBlocking {
+            withTimeout(10.seconds) {
+                job.join()
             }
         }
     }

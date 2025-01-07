@@ -1,7 +1,3 @@
-/*
- * Copyright 2016-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
- */
-
 package kotlinx.coroutines.scheduling
 
 import kotlinx.coroutines.*
@@ -15,11 +11,12 @@ internal object DefaultScheduler : SchedulerCoroutineDispatcher(
     IDLE_WORKER_KEEP_ALIVE_NS, DEFAULT_SCHEDULER_NAME
 ) {
 
-    @ExperimentalCoroutinesApi
-    override fun limitedParallelism(parallelism: Int): CoroutineDispatcher {
+    override fun limitedParallelism(parallelism: Int, name: String?): CoroutineDispatcher {
         parallelism.checkParallelism()
-        if (parallelism >= CORE_POOL_SIZE) return this
-        return super.limitedParallelism(parallelism)
+        if (parallelism >= CORE_POOL_SIZE) {
+            return namedOrThis(name)
+        }
+        return super.limitedParallelism(parallelism, name)
     }
 
     // Shuts down the dispatcher, used only by Dispatchers.shutdown()
@@ -47,11 +44,17 @@ private object UnlimitedIoScheduler : CoroutineDispatcher() {
         DefaultScheduler.dispatchWithContext(block, BlockingContext, false)
     }
 
-    @ExperimentalCoroutinesApi
-    override fun limitedParallelism(parallelism: Int): CoroutineDispatcher {
+    override fun limitedParallelism(parallelism: Int, name: String?): CoroutineDispatcher {
         parallelism.checkParallelism()
-        if (parallelism >= MAX_POOL_SIZE) return this
-        return super.limitedParallelism(parallelism)
+        if (parallelism >= MAX_POOL_SIZE) {
+            return namedOrThis(name)
+        }
+        return super.limitedParallelism(parallelism, name)
+    }
+
+    // This name only leaks to user code as part of .limitedParallelism machinery
+    override fun toString(): String {
+        return "Dispatchers.IO"
     }
 }
 
@@ -70,10 +73,9 @@ internal object DefaultIoScheduler : ExecutorCoroutineDispatcher(), Executor {
 
     override fun execute(command: java.lang.Runnable) = dispatch(EmptyCoroutineContext, command)
 
-    @ExperimentalCoroutinesApi
-    override fun limitedParallelism(parallelism: Int): CoroutineDispatcher {
+    override fun limitedParallelism(parallelism: Int, name: String?): CoroutineDispatcher {
         // See documentation to Dispatchers.IO for the rationale
-        return UnlimitedIoScheduler.limitedParallelism(parallelism)
+        return UnlimitedIoScheduler.limitedParallelism(parallelism, name)
     }
 
     override fun dispatch(context: CoroutineContext, block: Runnable) {
@@ -111,11 +113,21 @@ internal open class SchedulerCoroutineDispatcher(
 
     override fun dispatch(context: CoroutineContext, block: Runnable): Unit = coroutineScheduler.dispatch(block)
 
-    override fun dispatchYield(context: CoroutineContext, block: Runnable): Unit =
-        coroutineScheduler.dispatch(block, tailDispatch = true)
+    override fun dispatchYield(context: CoroutineContext, block: Runnable): Unit {
+        /*
+         * 'dispatchYield' implementation is needed to address the scheduler's scheduling policy.
+         * By default, the scheduler dispatches tasks in a semi-LIFO order, meaning that for the
+         * task sequence [#1, #2, #3], the scheduling of task #4 will produce
+         * [#4, #1, #2, #3], allocates new worker and makes #4 stealable after some time.
+         * On a fast enough system, it means that `while (true) { yield() }` might obstruct the progress
+         * of the system and potentially starve it.
+         * To mitigate that, `dispatchYield` is a dedicated entry point that produces [#1, #2, #3, #4]
+         */
+        coroutineScheduler.dispatch(block, fair = true)
+    }
 
-    internal fun dispatchWithContext(block: Runnable, context: TaskContext, tailDispatch: Boolean) {
-        coroutineScheduler.dispatch(block, context, tailDispatch)
+    internal fun dispatchWithContext(block: Runnable, context: TaskContext, fair: Boolean) {
+        coroutineScheduler.dispatch(block, context, fair)
     }
 
     override fun close() {

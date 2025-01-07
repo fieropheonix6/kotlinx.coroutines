@@ -1,21 +1,14 @@
-/*
- * Copyright 2016-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
- */
-
 package kotlinx.coroutines
 
 /**
  * A runnable task for [CoroutineDispatcher.dispatch].
+ *
+ * It is equivalent to the type `() -> Unit`, but on the JVM, it is represented as a `java.lang.Runnable`,
+ * making it easier to wrap the interfaces that expect `java.lang.Runnable` into a [CoroutineDispatcher].
  */
-public expect interface Runnable {
+public expect fun interface Runnable {
     /**
      * @suppress
      */
     public fun run()
 }
-
-/**
- * Creates [Runnable] task instance.
- */
-@Suppress("FunctionName")
-public expect inline fun Runnable(crossinline block: () -> Unit): Runnable

@@ -1,7 +1,3 @@
-/*
- * Copyright 2016-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
- */
-
 package kotlinx.coroutines.internal
 
 import kotlinx.atomicfu.*
@@ -25,7 +21,8 @@ import kotlin.coroutines.*
  */
 internal class LimitedDispatcher(
     private val dispatcher: CoroutineDispatcher,
-    private val parallelism: Int
+    private val parallelism: Int,
+    private val name: String?
 ) : CoroutineDispatcher(), Delay by (dispatcher as? Delay ?: DefaultDelay) {
 
     // Atomic is necessary here for the sake of K/N memory ordering,
@@ -37,16 +34,15 @@ internal class LimitedDispatcher(
     // A separate object that we can synchronize on for K/N
     private val workerAllocationLock = SynchronizedObject()
 
-    @ExperimentalCoroutinesApi
-    override fun limitedParallelism(parallelism: Int): CoroutineDispatcher {
+    override fun limitedParallelism(parallelism: Int, name: String?): CoroutineDispatcher {
         parallelism.checkParallelism()
-        if (parallelism >= this.parallelism) return this
-        return super.limitedParallelism(parallelism)
+        if (parallelism >= this.parallelism) return namedOrThis(name)
+        return super.limitedParallelism(parallelism, name)
     }
 
     override fun dispatch(context: CoroutineContext, block: Runnable) {
         dispatchInternal(block) { worker ->
-            dispatcher.dispatch(this, worker)
+            dispatcher.safeDispatch(this, worker)
         }
     }
 
@@ -99,6 +95,8 @@ internal class LimitedDispatcher(
         }
     }
 
+    override fun toString() = name ?: "$dispatcher.limitedParallelism($parallelism)"
+
     /**
      * A worker that polls the queue and runs tasks until there are no more of them.
      *
@@ -118,10 +116,10 @@ internal class LimitedDispatcher(
                 }
                 currentTask = obtainTaskOrDeallocateWorker() ?: return
                 // 16 is our out-of-thin-air constant to emulate fairness. Used in JS dispatchers as well
-                if (++fairnessCounter >= 16 && dispatcher.isDispatchNeeded(this@LimitedDispatcher)) {
+                if (++fairnessCounter >= 16 && dispatcher.safeIsDispatchNeeded(this@LimitedDispatcher)) {
                     // Do "yield" to let other views execute their runnable as well
                     // Note that we do not decrement 'runningWorkers' as we are still committed to our part of work
-                    dispatcher.dispatch(this@LimitedDispatcher, this)
+                    dispatcher.safeDispatch(this@LimitedDispatcher, this)
                     return
                 }
             }
@@ -129,5 +127,9 @@ internal class LimitedDispatcher(
     }
 }
 
-// Save a few bytecode ops
 internal fun Int.checkParallelism() = require(this >= 1) { "Expected positive parallelism level, but got $this" }
+
+internal fun CoroutineDispatcher.namedOrThis(name: String?): CoroutineDispatcher {
+    if (name != null) return NamedDispatcher(this, name)
+    return this
+}

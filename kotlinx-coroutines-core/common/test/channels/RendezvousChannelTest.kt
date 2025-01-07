@@ -1,9 +1,6 @@
-/*
- * Copyright 2016-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
- */
-
 package kotlinx.coroutines.channels
 
+import kotlinx.coroutines.testing.*
 import kotlinx.coroutines.*
 import kotlin.test.*
 
@@ -275,5 +272,25 @@ class RendezvousChannelTest : TestBase() {
         val channel = Channel<Int>(Channel.RENDEZVOUS)
         channel.cancel(TestCancellationException())
         channel.receiveCatching().getOrThrow()
+    }
+
+    /** Tests that [BufferOverflow.DROP_OLDEST] takes precedence over [Channel.RENDEZVOUS]. */
+    @Test
+    fun testDropOldest() = runTest {
+        val channel = Channel<Int>(Channel.RENDEZVOUS, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+        channel.send(1)
+        channel.send(2)
+        channel.send(3)
+        assertEquals(3, channel.receive())
+    }
+
+    /** Tests that [BufferOverflow.DROP_LATEST] takes precedence over [Channel.RENDEZVOUS]. */
+    @Test
+    fun testDropLatest() = runTest {
+        val channel = Channel<Int>(Channel.RENDEZVOUS, onBufferOverflow = BufferOverflow.DROP_LATEST)
+        channel.send(1)
+        channel.send(2)
+        channel.send(3)
+        assertEquals(1, channel.receive())
     }
 }

@@ -1,6 +1,3 @@
-/*
- * Copyright 2016-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
- */
 @file:OptIn(ExperimentalContracts::class)
 
 package kotlinx.coroutines
@@ -30,7 +27,7 @@ import kotlin.time.Duration.Companion.milliseconds
  * even right before the return from inside the timeout [block]. Keep this in mind if you open or acquire some
  * resource inside the [block] that needs closing or release outside the block.
  * See the
- * [Asynchronous timeout and resources][https://kotlinlang.org/docs/reference/coroutines/cancellation-and-timeouts.html#asynchronous-timeout-and-resources]
+ * [Asynchronous timeout and resources](https://kotlinlang.org/docs/reference/coroutines/cancellation-and-timeouts.html#asynchronous-timeout-and-resources)
  * section of the coroutines guide for details.
  *
  * > Implementation note: how the time is tracked exactly is an implementation detail of the context's [CoroutineDispatcher].
@@ -43,6 +40,7 @@ public suspend fun <T> withTimeout(timeMillis: Long, block: suspend CoroutineSco
     }
     if (timeMillis <= 0L) throw TimeoutCancellationException("Timed out immediately")
     return suspendCoroutineUninterceptedOrReturn { uCont ->
+        @Suppress("LEAKED_IN_PLACE_LAMBDA") // Contract is preserved, invoked immediately or throws
         setupTimeout(TimeoutCoroutine(timeMillis, uCont), block)
     }
 }
@@ -62,7 +60,7 @@ public suspend fun <T> withTimeout(timeMillis: Long, block: suspend CoroutineSco
  * even right before the return from inside the timeout [block]. Keep this in mind if you open or acquire some
  * resource inside the [block] that needs closing or release outside the block.
  * See the
- * [Asynchronous timeout and resources][https://kotlinlang.org/docs/reference/coroutines/cancellation-and-timeouts.html#asynchronous-timeout-and-resources]
+ * [Asynchronous timeout and resources](https://kotlinlang.org/docs/reference/coroutines/cancellation-and-timeouts.html#asynchronous-timeout-and-resources)
  * section of the coroutines guide for details.
  *
  * > Implementation note: how the time is tracked exactly is an implementation detail of the context's [CoroutineDispatcher].
@@ -89,7 +87,7 @@ public suspend fun <T> withTimeout(timeout: Duration, block: suspend CoroutineSc
  * even right before the return from inside the timeout [block]. Keep this in mind if you open or acquire some
  * resource inside the [block] that needs closing or release outside the block.
  * See the
- * [Asynchronous timeout and resources][https://kotlinlang.org/docs/reference/coroutines/cancellation-and-timeouts.html#asynchronous-timeout-and-resources]
+ * [Asynchronous timeout and resources](https://kotlinlang.org/docs/reference/coroutines/cancellation-and-timeouts.html#asynchronous-timeout-and-resources)
  * section of the coroutines guide for details.
  *
  * > Implementation note: how the time is tracked exactly is an implementation detail of the context's [CoroutineDispatcher].
@@ -130,7 +128,7 @@ public suspend fun <T> withTimeoutOrNull(timeMillis: Long, block: suspend Corout
  * even right before the return from inside the timeout [block]. Keep this in mind if you open or acquire some
  * resource inside the [block] that needs closing or release outside the block.
  * See the
- * [Asynchronous timeout and resources][https://kotlinlang.org/docs/reference/coroutines/cancellation-and-timeouts.html#asynchronous-timeout-and-resources]
+ * [Asynchronous timeout and resources](https://kotlinlang.org/docs/reference/coroutines/cancellation-and-timeouts.html#asynchronous-timeout-and-resources)
  * section of the coroutines guide for details.
  *
  * > Implementation note: how the time is tracked exactly is an implementation detail of the context's [CoroutineDispatcher].

@@ -1,14 +1,12 @@
-/*
- * Copyright 2016-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
- */
-
 package kotlinx.coroutines.test
 
 import kotlinx.coroutines.*
 import kotlinx.coroutines.internal.*
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.testing.*
 import kotlin.coroutines.*
 import kotlin.test.*
+import kotlin.test.assertFailsWith
 import kotlin.time.*
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -137,6 +135,8 @@ class RunTestTest {
     @Test
     @NoJs
     @NoNative
+    @NoWasmWasi
+    @NoWasmJs
     fun testListingActiveCoroutinesOnTimeout(): TestResult {
         val name1 = "GoodUniqueName"
         val name2 = "BadUniqueName"
@@ -473,4 +473,18 @@ class RunTestTest {
         runTest {
         }
     })
+
+    @Test
+    fun testCancellingTestScope() = testResultMap({
+        try {
+            it()
+            fail("unreached")
+        } catch (e: CancellationException) {
+            // expected
+        }
+    }) {
+        runTest {
+            cancel(CancellationException("Oh no", TestException()))
+        }
+    }
 }

@@ -1,7 +1,3 @@
-/*
- * Copyright 2016-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
- */
-
 package kotlinx.coroutines
 
 /**
@@ -34,9 +30,6 @@ internal actual class JobCancellationException public actual constructor(
     override fun hashCode(): Int =
         (message!!.hashCode() * 31 + job.hashCode()) * 31 + (cause?.hashCode() ?: 0)
 }
-
-@Suppress("NOTHING_TO_INLINE")
-internal actual inline fun Throwable.addSuppressedThrowable(other: Throwable) { /* empty */ }
 
 // For use in tests
 internal actual val RECOVER_STACK_TRACES: Boolean = false

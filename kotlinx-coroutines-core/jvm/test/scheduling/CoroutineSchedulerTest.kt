@@ -1,10 +1,6 @@
-/*
- * Copyright 2016-2018 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
- */
-
 package kotlinx.coroutines.scheduling
 
-import kotlinx.coroutines.*
+import kotlinx.coroutines.testing.*
 import org.junit.Test
 import java.lang.Runnable
 import java.util.concurrent.*
@@ -12,16 +8,16 @@ import kotlin.coroutines.*
 import kotlin.test.*
 
 class CoroutineSchedulerTest : TestBase() {
-    private val taskModes = listOf(TASK_NON_BLOCKING, TASK_PROBABLY_BLOCKING)
+    private val contexts = listOf(NonBlockingContext, BlockingContext)
 
     @Test
     fun testModesExternalSubmission() { // Smoke
         CoroutineScheduler(1, 1).use {
-            for (mode in taskModes) {
+            for (context in contexts) {
                 val latch = CountDownLatch(1)
                 it.dispatch(Runnable {
                     latch.countDown()
-                }, TaskContextImpl(mode))
+                }, context)
 
                 latch.await()
             }
@@ -31,12 +27,12 @@ class CoroutineSchedulerTest : TestBase() {
     @Test
     fun testModesInternalSubmission() { // Smoke
         CoroutineScheduler(2, 2).use {
-            val latch = CountDownLatch(taskModes.size)
+            val latch = CountDownLatch(contexts.size)
             it.dispatch(Runnable {
-                for (mode in taskModes) {
+                for (context in contexts) {
                     it.dispatch(Runnable {
                         latch.countDown()
-                    }, TaskContextImpl(mode))
+                    }, context)
                 }
             })
 
@@ -83,7 +79,7 @@ class CoroutineSchedulerTest : TestBase() {
                 it.dispatch(Runnable {
                     expect(2)
                     finishLatch.countDown()
-                }, tailDispatch = true)
+                }, fair = true)
             })
 
             startLatch.countDown()
@@ -166,9 +162,5 @@ class CoroutineSchedulerTest : TestBase() {
             check(ratio <= 1.1)
             check(ratio >= 0.9)
         }
-    }
-
-    private class TaskContextImpl(override val taskMode: Int) : TaskContext {
-        override fun afterTask() {}
     }
 }

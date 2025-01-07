@@ -1,7 +1,3 @@
-/*
- * Copyright 2016-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
- */
-
 @file:JvmMultifileClass
 @file:JvmName("BuildersKt")
 @file:OptIn(ExperimentalContracts::class)
@@ -92,6 +88,7 @@ public fun <T> CoroutineScope.async(
     return coroutine
 }
 
+@OptIn(InternalForInheritanceCoroutinesApi::class)
 @Suppress("UNCHECKED_CAST")
 private open class DeferredCoroutine<T>(
     parentContext: CoroutineContext,
@@ -156,6 +153,7 @@ public suspend fun <T> withContext(
         // FAST PATH #1 -- new context is the same as the old one
         if (newContext === oldContext) {
             val coroutine = ScopeCoroutine(newContext, uCont)
+            @Suppress("LEAKED_IN_PLACE_LAMBDA") // Contract is preserved, invoked immediately or throws
             return@sc coroutine.startUndispatchedOrReturn(coroutine, block)
         }
         // FAST PATH #2 -- the new dispatcher is the same as the old one (something else changed)
@@ -164,11 +162,13 @@ public suspend fun <T> withContext(
             val coroutine = UndispatchedCoroutine(newContext, uCont)
             // There are changes in the context, so this thread needs to be updated
             withCoroutineContext(coroutine.context, null) {
+                @Suppress("LEAKED_IN_PLACE_LAMBDA") // Contract is preserved, invoked immediately or throws
                 return@sc coroutine.startUndispatchedOrReturn(coroutine, block)
             }
         }
         // SLOW PATH -- use new dispatcher
         val coroutine = DispatchedCoroutine(newContext, uCont)
+        @Suppress("LEAKED_IN_PLACE_LAMBDA")  // Contract is preserved, invoked immediately or throws
         block.startCoroutineCancellable(coroutine, coroutine)
         coroutine.getResult()
     }
@@ -218,16 +218,13 @@ private const val SUSPENDED = 1
 private const val RESUMED = 2
 
 // Used by withContext when context dispatcher changes
-@PublishedApi
-internal class DispatchedCoroutine<in T> internal constructor(
+internal class DispatchedCoroutine<in T>(
     context: CoroutineContext,
     uCont: Continuation<T>
 ) : ScopeCoroutine<T>(context, uCont) {
     // this is copy-and-paste of a decision state machine inside AbstractionContinuation
     // todo: we may some-how abstract it via inline class
-    // Used by the IDEA debugger via reflection and must be kept binary-compatible, see KTIJ-24102
-    @JvmField
-    public val _decision = atomic(UNDECIDED)
+    private val _decision = atomic(UNDECIDED)
 
     private fun trySuspend(): Boolean {
         _decision.loop { decision ->

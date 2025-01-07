@@ -1,7 +1,3 @@
-/*
- * Copyright 2016-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
- */
-
 package kotlinx.coroutines.internal
 
 internal actual typealias ReentrantLock = NoOpLock
@@ -15,3 +11,25 @@ internal class NoOpLock {
 
 internal actual fun <E> identitySet(expectedSize: Int): MutableSet<E> = HashSet(expectedSize)
 
+internal actual class WorkaroundAtomicReference<V> actual constructor(private var value: V) {
+
+    public actual fun get(): V = value
+
+    public actual fun set(value: V) {
+        this.value = value
+    }
+
+    public actual fun getAndSet(value: V): V {
+        val prev = this.value
+        this.value = value
+        return prev
+    }
+
+    public actual fun compareAndSet(expected: V, value: V): Boolean {
+        if (this.value === expected) {
+            this.value = value
+            return true
+        }
+        return false
+    }
+}

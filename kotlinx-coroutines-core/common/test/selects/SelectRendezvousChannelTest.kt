@@ -1,10 +1,8 @@
-/*
- * Copyright 2016-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
- */
 @file:Suppress("NAMED_ARGUMENTS_NOT_ALLOWED") // KT-21913
 
 package kotlinx.coroutines.selects
 
+import kotlinx.coroutines.testing.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
 import kotlin.test.*
@@ -339,7 +337,7 @@ class SelectRendezvousChannelTest : TestBase() {
             channel.onReceiveCatching {
                 expect(5)
                 assertTrue(it.isClosed)
-                assertTrue(it.exceptionOrNull() is TestException)
+                assertIs<TestException>(it.exceptionOrNull())
             }
         }
 
@@ -421,10 +419,10 @@ class SelectRendezvousChannelTest : TestBase() {
     fun testSelectSendWhenClosed() = runTest {
         expect(1)
         val c = Channel<Int>(Channel.RENDEZVOUS)
-        val sender = launch(start = CoroutineStart.UNDISPATCHED) {
+        launch(start = CoroutineStart.UNDISPATCHED) {
             expect(2)
             c.send(1) // enqueue sender
-            expectUnreached()
+            finish(4)
         }
         c.close() // then close
         assertFailsWith<ClosedSendChannelException> {
@@ -436,8 +434,7 @@ class SelectRendezvousChannelTest : TestBase() {
                 }
             }
         }
-        sender.cancel()
-        finish(4)
+        assertEquals(1, c.receive())
     }
 
     // only for debugging

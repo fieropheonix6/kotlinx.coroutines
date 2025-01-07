@@ -1,6 +1,3 @@
-/*
- * Copyright 2016-2022 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
- */
 @file:JvmName("CommunityProjectsBuild")
 
 import org.gradle.api.*
@@ -20,8 +17,8 @@ private val LOGGER: Logger = Logger.getLogger("Kotlin settings logger")
  * are compatible with our libraries (aka "integration testing that substitutes lack of unit testing").
  *
  * When `build_snapshot_train` is set to true (and [isSnapshotTrainEnabled] returns `true`),
- * * `kotlin_version property` is overridden with `kotlin_snapshot_version` (see [getOverriddenKotlinVersion]),
- * * `atomicfu_version` is overwritten by TeamCity environment (AFU is built with snapshot and published to mavenLocal
+ * - `kotlin_version property` is overridden with `kotlin_snapshot_version` (see [getOverriddenKotlinVersion]),
+ * - `atomicfu_version` is overwritten by TeamCity environment (AFU is built with snapshot and published to mavenLocal
  *   as previous step or the snapshot build).
  * Additionally, mavenLocal and Sonatype snapshots are added to repository list and stress tests are disabled
  * (see [configureCommunityBuildTweaks]).
@@ -137,20 +134,16 @@ fun getOverriddenKotlinVersion(project: Project): String? =
 /**
  * Checks if the project is built with a snapshot version of Kotlin compiler.
  */
-fun isSnapshotTrainEnabled(project: Project): Boolean =
-    when (project.rootProject.properties["build_snapshot_train"]) {
-        null -> false
-        "" -> false
-        else -> true
-    }
+fun isSnapshotTrainEnabled(project: Project): Boolean {
+    val buildSnapshotTrain = project.rootProject.properties["build_snapshot_train"] as? String
+    return !buildSnapshotTrain.isNullOrBlank()
+}
 
 fun shouldUseLocalMaven(project: Project): Boolean {
-    var someDependencyIsSnapshot = false
-    project.rootProject.properties.forEach { key, value ->
-        if (key.endsWith("_version") && value is String && value.endsWith("-SNAPSHOT")) {
-            println("NOTE: USING SNAPSHOT VERSION: $key=$value")
-            someDependencyIsSnapshot = true
+    val hasSnapshotDependency = project.rootProject.properties.any { (key, value) ->
+        key.endsWith("_version") && value is String && value.endsWith("-SNAPSHOT").also {
+            if (it) println("NOTE: USING SNAPSHOT VERSION: $key=$value")
         }
     }
-    return isSnapshotTrainEnabled(project) || someDependencyIsSnapshot
+    return hasSnapshotDependency || isSnapshotTrainEnabled(project)
 }

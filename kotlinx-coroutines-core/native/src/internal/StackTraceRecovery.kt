@@ -1,7 +1,3 @@
-/*
- * Copyright 2016-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
- */
-
 package kotlinx.coroutines.internal
 
 import kotlin.coroutines.*
@@ -19,7 +15,6 @@ internal actual interface CoroutineStackFrame {
     public actual fun getStackTraceElement(): StackTraceElement?
 }
 
-@Suppress("ACTUAL_WITHOUT_EXPECT")
 internal actual typealias StackTraceElement = Any
 
 internal actual fun Throwable.initCause(cause: Throwable) {

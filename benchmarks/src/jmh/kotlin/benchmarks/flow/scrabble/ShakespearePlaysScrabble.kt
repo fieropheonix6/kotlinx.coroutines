@@ -1,7 +1,3 @@
-/*
- * Copyright 2016-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
- */
-
 package benchmarks.flow.scrabble
 
 import org.openjdk.jmh.annotations.*
@@ -70,7 +66,7 @@ abstract class ShakespearePlaysScrabble {
 
     private fun readResource(path: String) =
         BufferedReader(InputStreamReader(GZIPInputStream(this.javaClass.classLoader.getResourceAsStream(path)))).lines()
-            .map { it.toLowerCase() }.collect(Collectors.toSet())
+            .map { it.lowercase() }.collect(Collectors.toSet())
 
     init {
         val expected = listOf(120 to listOf("jezebel", "quickly"),

@@ -1,7 +1,3 @@
-/*
- * Copyright 2016-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
- */
-
 package kotlinx.coroutines
 
 /**
@@ -26,6 +22,5 @@ internal expect class JobCancellationException(
 
 internal class CoroutinesInternalError(message: String, cause: Throwable) : Error(message, cause)
 
-internal expect fun Throwable.addSuppressedThrowable(other: Throwable)
 // For use in tests
 internal expect val RECOVER_STACK_TRACES: Boolean

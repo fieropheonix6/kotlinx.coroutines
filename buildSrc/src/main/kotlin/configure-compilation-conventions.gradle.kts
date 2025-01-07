@@ -1,16 +1,9 @@
-/*
- * Copyright 2016-2022 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
- */
-
-import org.jetbrains.kotlin.gradle.dsl.*
-import org.jetbrains.kotlin.gradle.dsl.KotlinCompile
 import org.jetbrains.kotlin.gradle.tasks.*
-import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
 
 configure(subprojects) {
     val project = this
     if (name in sourceless) return@configure
-    apply(plugin = "kotlinx-atomicfu")
+    apply(plugin = "atomicfu-conventions")
     tasks.withType<KotlinCompilationTask<*>>().configureEach {
         val isMainTaskName = name.startsWith("compileKotlin")
         compilerOptions {
@@ -23,26 +16,26 @@ configure(subprojects) {
                 apiVersion = it
                 versionsAreNotOverridden = false
             }
-            if (isMainTaskName && versionsAreNotOverridden) {
+            if (isMainTaskName && versionsAreNotOverridden && !unpublished.contains(project.name)) {
                 allWarningsAsErrors = true
                 freeCompilerArgs.add("-Xexplicit-api=strict")
             }
-
-            /*
-             * Coroutines do not interop with Java and these flags provide a significant
-             * (i.e. close to double-digit) reduction in both bytecode and optimized dex size
-             */
-            val bytecodeSizeReductionOptions =
-                if (this@configureEach is KotlinJvmCompile) listOf(
+            /* Coroutines do not interop with Java and these flags provide a significant
+             * (i.e. close to double-digit) reduction in both bytecode and optimized dex size */
+            if (this@configureEach is KotlinJvmCompile) {
+                freeCompilerArgs.addAll(
                     "-Xno-param-assertions",
                     "-Xno-call-assertions",
                     "-Xno-receiver-assertions"
-                ) else emptyList()
-
-            val newOptions = listOf(
-                "-progressive", "-Xexpect-actual-classes"
-            ) + bytecodeSizeReductionOptions + optInAnnotations.map { "-opt-in=$it" }
-            freeCompilerArgs.addAll(newOptions)
+                )
+            }
+            if (this@configureEach is KotlinNativeCompile) {
+                optIn.addAll(
+                    "kotlinx.cinterop.ExperimentalForeignApi",
+                    "kotlinx.cinterop.UnsafeNumber",
+                    "kotlin.experimental.ExperimentalNativeApi",
+                )
+            }
         }
 
     }

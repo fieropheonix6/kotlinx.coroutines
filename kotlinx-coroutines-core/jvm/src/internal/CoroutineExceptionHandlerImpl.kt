@@ -1,7 +1,3 @@
-/*
- * Copyright 2016-2022 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
- */
-
 package kotlinx.coroutines.internal
 
 import java.util.*
@@ -36,7 +32,11 @@ internal actual fun propagateExceptionFinalResort(exception: Throwable) {
 }
 
 // This implementation doesn't store a stacktrace, which is good because a stacktrace doesn't make sense for this.
-internal actual class DiagnosticCoroutineContextException actual constructor(@Transient private val context: CoroutineContext) : RuntimeException() {
+internal actual class DiagnosticCoroutineContextException actual constructor(context: CoroutineContext) : RuntimeException() {
+
+    @Transient
+    private val context: CoroutineContext? = context
+
     override fun getLocalizedMessage(): String {
         return context.toString()
     }

@@ -1,7 +1,3 @@
-/*
- * Copyright 2016-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
- */
-
 @file:Suppress("UNCHECKED_CAST")
 
 package kotlinx.coroutines.internal
@@ -202,10 +198,8 @@ private fun StackTraceElement.elementWiseEquals(e: StackTraceElement): Boolean {
             && fileName == e.fileName && className == e.className
 }
 
-@Suppress("ACTUAL_WITHOUT_EXPECT")
 internal actual typealias CoroutineStackFrame = kotlin.coroutines.jvm.internal.CoroutineStackFrame
 
-@Suppress("ACTUAL_WITHOUT_EXPECT")
 internal actual typealias StackTraceElement = java.lang.StackTraceElement
 
 @Suppress("EXTENSION_SHADOWED_BY_MEMBER")

@@ -1,7 +1,3 @@
-/*
- * Copyright 2016-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
- */
-
 @file:OptIn(ObsoleteWorkersApi::class)
 
 package kotlinx.coroutines
@@ -15,6 +11,7 @@ import kotlin.native.concurrent.*
 import kotlin.time.*
 import kotlin.time.Duration.Companion.milliseconds
 
+@DelicateCoroutinesApi
 public actual fun newFixedThreadPoolContext(nThreads: Int, name: String): CloseableCoroutineDispatcher {
     require(nThreads >= 1) { "Expected at least one thread, but got: $nThreads" }
     return MultiWorkerDispatcher(name, nThreads)
@@ -80,7 +77,7 @@ internal class WorkerDispatcher(name: String) : CloseableCoroutineDispatcher(), 
 
 private class MultiWorkerDispatcher(
     private val name: String,
-    workersCount: Int
+    private val workersCount: Int
 ) : CloseableCoroutineDispatcher() {
     private val tasksQueue = Channel<Runnable>(Channel.UNLIMITED)
     private val availableWorkers = Channel<CancellableContinuation<Runnable>>(Channel.UNLIMITED)
@@ -95,8 +92,11 @@ private class MultiWorkerDispatcher(
      */
     private val tasksAndWorkersCounter = atomic(0L)
 
+    @Suppress("NOTHING_TO_INLINE")
     private inline fun Long.isClosed() = this and 1L == 1L
+    @Suppress("NOTHING_TO_INLINE")
     private inline fun Long.hasTasks() = this >= 2
+    @Suppress("NOTHING_TO_INLINE")
     private inline fun Long.hasWorkers() = this < 0
 
     private fun workerRunLoop() = runBlocking {
@@ -141,6 +141,14 @@ private class MultiWorkerDispatcher(
             val result = tasksQueue.trySend(block)
             checkChannelResult(result)
         }
+    }
+
+    override fun limitedParallelism(parallelism: Int, name: String?): CoroutineDispatcher {
+        parallelism.checkParallelism()
+        if (parallelism >= workersCount) {
+            return namedOrThis(name)
+        }
+        return super.limitedParallelism(parallelism, name)
     }
 
     override fun close() {

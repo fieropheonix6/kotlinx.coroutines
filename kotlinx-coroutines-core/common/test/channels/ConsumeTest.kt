@@ -1,10 +1,7 @@
-/*
- * Copyright 2016-2023 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
- */
-
 @file:OptIn(DelicateCoroutinesApi::class)
 package kotlinx.coroutines.channels
 
+import kotlinx.coroutines.testing.*
 import kotlinx.coroutines.*
 import kotlin.test.*
 
@@ -94,8 +91,46 @@ class ConsumeTest: TestBase() {
         assertTrue(channel.isClosedForReceive)
     }
 
+    /** Checks that [ReceiveChannel.consumeEach] reacts to cancellation, but processes the elements that are
+     * readily available in the buffer. */
+    @Test
+    fun testConsumeEachExitsOnCancellation() = runTest {
+        val undeliveredElements = mutableListOf<Int>()
+        val channel = Channel<Int>(2, onUndeliveredElement = {
+            undeliveredElements.add(it)
+        })
+        launch {
+            // These two elements will be sent and put into the buffer:
+            channel.send(0)
+            channel.send(1)
+            // This element will not fit into the buffer, so `send` suspends:
+            channel.send(2)
+            // At this point, the consumer's `launch` is cancelled.
+            yield() // Allow the cancellation handler of the consumer to run.
+            // Try to send a new element, which will fail at this point:
+            channel.send(3)
+            fail("unreached")
+        }
+        launch {
+            channel.consumeEach {
+                cancel()
+                assertTrue(it in 0..2)
+            }
+        }.join()
+        assertTrue(channel.isClosedForReceive)
+        assertEquals(listOf(3), undeliveredElements)
+    }
+
+    @Test
+    fun testConsumeEachThrowingOnChannelClosing() = runTest {
+        val channel = Channel<Int>()
+        channel.close(TestException())
+        assertFailsWith<TestException> {
+            channel.consumeEach { fail("unreached") }
+        }
+    }
+
     /** Check that [BroadcastChannel.consume] does not suffer from KT-58685 */
-    @OptIn(ObsoleteCoroutinesApi::class)
     @Suppress("DEPRECATION", "DEPRECATION_ERROR")
     @Test
     fun testBroadcastChannelConsumeJsMiscompilation() = runTest {

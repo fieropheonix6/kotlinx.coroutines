@@ -1,7 +1,3 @@
-/*
- * Copyright 2016-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
- */
-
 @file:JvmMultifileClass
 @file:JvmName("FlowKt")
 @file:Suppress("UNCHECKED_CAST")
@@ -111,7 +107,7 @@ public suspend fun <T> Flow<T>.first(predicate: suspend (T) -> Boolean): T {
             true
         }
     }
-    if (result === NULL) throw NoSuchElementException("Expected at least one element matching the predicate $predicate")
+    if (result === NULL) throw NoSuchElementException("Expected at least one element matching the predicate")
     return result as T
 }
 

@@ -61,7 +61,7 @@ stacktraces will be dumped to the console.
 ### Using as JVM agent
 
 Debug module can also be used as a standalone JVM agent to enable debug probes on the application startup.
-You can run your application with an additional argument: `-javaagent:kotlinx-coroutines-debug-1.8.0-RC2.jar`.
+You can run your application with an additional argument: `-javaagent:kotlinx-coroutines-debug-1.10.1.jar`.
 Additionally, on Linux and Mac OS X you can use `kill -5 $pid` command in order to force your application to print all alive coroutines.
 When used as Java agent, `"kotlinx.coroutines.debug.enable.creation.stack.trace"` system property can be used to control 
 [DebugProbes.enableCreationStackTraces] along with agent startup.
@@ -70,8 +70,8 @@ When used as Java agent, `"kotlinx.coroutines.debug.enable.creation.stack.trace"
 
 It is possible to run an application in production environments with debug probes in order to monitor its 
 state and improve its observability. 
-For that, it is strongly recommended to switch off [DebugProbes.enableCreationStackTraces] property to significantly 
-reduce the overhead of debug probes and make it insignificant.
+For that, it is strongly recommended not to enable [DebugProbes.enableCreationStackTraces], as enabling it makes
+the performance overhead of the debug probes non-negligible.
 With creation stack-traces disabled, the typical overhead of enabled debug probes is a single-digit percentage of the total
 application throughput.
 
@@ -123,16 +123,6 @@ Coroutine "coroutine#2":DeferredCoroutine{Active}@289d1c02, state: SUSPENDED
 	at ExampleKt.combineResults(Example.kt:11)
 	at ExampleKt$computeValue$2.invokeSuspend(Example.kt:7)
 	at ExampleKt$main$1$deferred$1.invokeSuspend(Example.kt:25)
-	at _COROUTINE._CREATION._(CoroutineDebugging.kt)
-	at kotlin.coroutines.intrinsics.IntrinsicsKt__IntrinsicsJvmKt.createCoroutineUnintercepted(IntrinsicsJvm.kt:116)
-	at kotlinx.coroutines.intrinsics.CancellableKt.startCoroutineCancellable(Cancellable.kt:25)
-	at kotlinx.coroutines.BuildersKt.async$default(Unknown Source)
-	at ExampleKt$main$1.invokeSuspend(Example.kt:25)
-	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:32)
-	at kotlinx.coroutines.DispatchedTask.run(Dispatched.kt:233)
-	at kotlinx.coroutines.BuildersKt.runBlocking$default(Unknown Source)
-	at ExampleKt.main(Example.kt:23)
-	at ExampleKt.main(Example.kt)
 
 ... More coroutines here ...
 
@@ -177,12 +167,9 @@ dependency of `kotlinx-coroutines-test`) may fail with `DuplicateRelativeFileExc
 
 The problem is that Android merges the resources of all its dependencies into a single directory and complains about
 conflicts, but:
-* `kotlinx-coroutines-debug` transitively depends on JNA and JNA-platform, both of which include license files in their
-  META-INF directories. Trying to merge these files leads to conflicts, which means that any Android project that
-  depends on JNA and JNA-platform will experience build failures.
-* Additionally, `kotlinx-coroutines-debug` embeds `byte-buddy-agent` and `byte-buddy`, along with their resource files.
-  Then, if the project separately depends on `byte-buddy`, merging the resources of `kotlinx-coroutines-debug` with ones
-  from `byte-buddy` and `byte-buddy-agent` will lead to conflicts as the resource files are duplicated.
+`kotlinx-coroutines-debug` transitively depends on JNA and JNA-platform, byte-buddy and byte-buddy-agent, all of them include license files in their
+META-INF directories. Trying to merge these files leads to conflicts, which means that any Android project that
+depends on JNA and JNA-platform will experience build failures.
 
 One possible workaround for these issues is to add the following to the `android` block in your gradle file for the
 application subproject:

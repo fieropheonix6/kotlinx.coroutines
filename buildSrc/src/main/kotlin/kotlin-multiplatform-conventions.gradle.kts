@@ -1,7 +1,3 @@
-/*
- * Copyright 2016-2023 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
- */
-
 import org.gradle.api.*
 import org.gradle.api.tasks.testing.logging.*
 import org.jetbrains.kotlin.gradle.dsl.*
@@ -67,6 +63,18 @@ kotlin {
             api("org.jetbrains.kotlinx:atomicfu-wasm-js:${version("atomicfu")}")
         }
     }
+    @OptIn(org.jetbrains.kotlin.gradle.targets.js.dsl.ExperimentalWasmDsl::class)
+    wasmWasi {
+        nodejs()
+        compilations["main"]?.dependencies {
+            api("org.jetbrains.kotlinx:atomicfu-wasm-wasi:${version("atomicfu")}")
+        }
+        compilations.configureEach {
+            compilerOptions.configure {
+                optIn.add("kotlin.wasm.internal.InternalWasmApi")
+            }
+        }
+    }
     applyDefaultHierarchyTemplate()
     sourceSets {
         commonTest {
@@ -92,36 +100,44 @@ kotlin {
             // workaround for #3968 until this is fixed on atomicfu's side
             api("org.jetbrains.kotlinx:atomicfu:0.23.1")
         }
-        val jsAndWasmSharedMain by registering {
-            dependsOn(commonMain.get())
-        }
-        val jsAndWasmSharedTest by registering {
-            dependsOn(commonTest.get())
-        }
-        jsMain {
-            dependsOn(jsAndWasmSharedMain.get())
-        }
+        jsMain { }
         jsTest {
-            dependsOn(jsAndWasmSharedTest.get())
             dependencies {
                 api("org.jetbrains.kotlin:kotlin-test-js:${version("kotlin")}")
             }
         }
         val wasmJsMain by getting {
-            dependsOn(jsAndWasmSharedMain.get())
         }
         val wasmJsTest by getting {
-            dependsOn(jsAndWasmSharedTest.get())
             dependencies {
                 api("org.jetbrains.kotlin:kotlin-test-wasm-js:${version("kotlin")}")
             }
         }
+        val wasmWasiMain by getting {
+        }
+        val wasmWasiTest by getting {
+            dependencies {
+                api("org.jetbrains.kotlin:kotlin-test-wasm-wasi:${version("kotlin")}")
+            }
+        }
+        groupSourceSets("jsAndWasmJsShared", listOf("js", "wasmJs"), emptyList())
+        groupSourceSets("jsAndWasmShared", listOf("jsAndWasmJsShared", "wasmWasi"), listOf("common"))
+    }
+
+    @OptIn(org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi::class)
+    compilerOptions {
+        configureGlobalKotlinArgumentsAndOptIns()
+        freeCompilerArgs.add("-Xexpect-actual-classes")
+        optIn.add("kotlin.ExperimentalMultiplatform")
     }
 }
 
-// Disable intermediate sourceSet compilation because we do not need js-wasmJs artifact
+// Disable intermediate sourceSet compilation because we do not need js-wasm common artifact
 tasks.configureEach {
     if (name == "compileJsAndWasmSharedMainKotlinMetadata") {
+        enabled = false
+    }
+    if (name == "compileJsAndWasmJsSharedMainKotlinMetadata") {
         enabled = false
     }
 }
@@ -131,9 +147,5 @@ tasks.named("jvmTest", Test::class) {
         showStandardStreams = true
         events = setOf(TestLogEvent.PASSED, TestLogEvent.FAILED)
     }
-
-    val stressTest = project.properties["stressTest"]
-    if (stressTest != null) {
-        systemProperty("stressTest", "stressTest")
-    }
+    project.properties["stressTest"]?.let { systemProperty("stressTest", it) }
 }

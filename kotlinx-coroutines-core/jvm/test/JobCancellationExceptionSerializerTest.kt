@@ -1,9 +1,6 @@
-/*
- * Copyright 2016-2022 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
- */
-
 package kotlinx.coroutines
 
+import kotlinx.coroutines.testing.*
 import org.junit.*
 import java.io.*
 
@@ -37,6 +34,32 @@ class JobCancellationExceptionSerializerTest : TestBase() {
                 it.writeObject(e)
             }
             finish(4)
+        }
+    }
+
+    @Test
+    fun testHashCodeAfterDeserialization() = runTest {
+        try {
+            coroutineScope {
+                expect(1)
+                throw JobCancellationException(
+                    message = "Job Cancelled",
+                    job = Job(),
+                    cause = null,
+                )
+            }
+        } catch (e: Throwable) {
+            finish(2)
+            val outputStream = ByteArrayOutputStream()
+            ObjectOutputStream(outputStream).use {
+                it.writeObject(e)
+            }
+            val deserializedException =
+                ObjectInputStream(outputStream.toByteArray().inputStream()).use {
+                it.readObject() as JobCancellationException
+            }
+            // verify hashCode does not fail even though Job is transient
+            assert(deserializedException.hashCode() != 0)
         }
     }
 }

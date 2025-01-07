@@ -1,11 +1,9 @@
-/*
- * Copyright 2016-2022 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
- */
-
 package kotlinx.coroutines.android
 
+import kotlinx.coroutines.testing.*
 import android.os.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.testing.*
 import org.junit.Test
 import org.junit.runner.*
 import org.robolectric.*
@@ -13,9 +11,6 @@ import org.robolectric.annotation.*
 import org.robolectric.shadows.*
 import java.util.concurrent.*
 import kotlin.test.*
-import kotlin.time.*
-import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.seconds
 
 @RunWith(RobolectricTestRunner::class)
 @LooperMode(LooperMode.Mode.LEGACY)

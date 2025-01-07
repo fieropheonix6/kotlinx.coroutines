@@ -1,17 +1,10 @@
-/*
- * Copyright 2016-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
- */
-
 package kotlinx.coroutines
 
 /**
  * A runnable task for [CoroutineDispatcher.dispatch].
+ *
+ * It is a typealias for [java.lang.Runnable], which is widely used in Java APIs.
+ * This makes it possible to directly pass the argument of [CoroutineDispatcher.dispatch]
+ * to the underlying Java implementation without any additional wrapping.
  */
 public actual typealias Runnable = java.lang.Runnable
-
-/**
- * Creates [Runnable] task instance.
- */
-@Suppress("FunctionName")
-public actual inline fun Runnable(crossinline block: () -> Unit): Runnable =
-    java.lang.Runnable { block() }

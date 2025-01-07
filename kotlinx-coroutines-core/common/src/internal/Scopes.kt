@@ -1,7 +1,3 @@
-/*
- * Copyright 2016-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
- */
-
 package kotlinx.coroutines.internal
 
 import kotlinx.coroutines.*
@@ -25,6 +21,13 @@ internal open class ScopeCoroutine<in T>(
     override fun afterCompletion(state: Any?) {
         // Resume in a cancellable way by default when resuming from another context
         uCont.intercepted().resumeCancellableWith(recoverResult(state, uCont))
+    }
+
+    /**
+     * Invoked when a scoped coorutine was completed in an undispatched manner directly
+     * at the place of its start because it never suspended.
+     */
+    open fun afterCompletionUndispatched() {
     }
 
     override fun afterResume(state: Any?) {

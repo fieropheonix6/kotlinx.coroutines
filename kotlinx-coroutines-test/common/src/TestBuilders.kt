@@ -1,13 +1,10 @@
-/*
- * Copyright 2016-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
- */
 @file:JvmName("TestBuildersKt")
 @file:JvmMultifileClass
 
 package kotlinx.coroutines.test
 
+import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.selects.*
 import kotlin.coroutines.*
 import kotlin.jvm.*
@@ -18,19 +15,18 @@ import kotlin.time.Duration.Companion.seconds
 /**
  * A test result.
  *
- * * On JVM and Native, this resolves to [Unit], representing the fact that tests are run in a blocking manner on these
+ * - On JVM and Native, this resolves to [Unit], representing the fact that tests are run in a blocking manner on these
  *   platforms: a call to a function returning a [TestResult] will simply execute the test inside it.
- * * On JS, this is a `Promise`, which reflects the fact that the test-running function does not wait for a test to
+ * - On JS, this is a `Promise`, which reflects the fact that the test-running function does not wait for a test to
  *   finish. The JS test frameworks typically support returning `Promise` from a test and will correctly handle it.
  *
  * Because of the behavior on JS, extra care must be taken when writing multiplatform tests to avoid losing test errors:
- * * Don't do anything after running the functions returning a [TestResult]. On JS, this code will execute *before* the
+ * - Don't do anything after running the functions returning a [TestResult]. On JS, this code will execute *before* the
  *   test finishes.
- * * As a corollary, don't run functions returning a [TestResult] more than once per test. The only valid thing to do
+ * - As a corollary, don't run functions returning a [TestResult] more than once per test. The only valid thing to do
  *   with a [TestResult] is to immediately `return` it from a test.
- * * Don't nest functions returning a [TestResult].
+ * - Don't nest functions returning a [TestResult].
  */
-@Suppress("NO_ACTUAL_FOR_EXPECT")
 public expect class TestResult
 
 /**
@@ -311,12 +307,17 @@ public fun TestScope.runTest(
 ): TestResult = asSpecificImplementation().let { scope ->
     scope.enter()
     createTestResult {
+        val testBodyFinished = AtomicBoolean(false)
         /** TODO: moving this [AbstractCoroutine.start] call outside [createTestResult] fails on JS. */
         scope.start(CoroutineStart.UNDISPATCHED, scope) {
             /* we're using `UNDISPATCHED` to avoid the event loop, but we do want to set up the timeout machinery
             before any code executes, so we have to park here. */
             yield()
-            testBody()
+            try {
+                testBody()
+            } finally {
+                testBodyFinished.value = true
+            }
         }
         var timeoutError: Throwable? = null
         var cancellationException: CancellationException? = null
@@ -339,17 +340,15 @@ public fun TestScope.runTest(
                     if (exception is TimeoutCancellationException) {
                         dumpCoroutines()
                         val activeChildren = scope.children.filter(Job::isActive).toList()
-                        val completionCause = if (scope.isCancelled) scope.tryGetCompletionCause() else null
-                        var message = "After waiting for $timeout"
-                        if (completionCause == null)
-                            message += ", the test coroutine is not completing"
-                        if (activeChildren.isNotEmpty())
-                            message += ", there were active child jobs: $activeChildren"
-                        if (completionCause != null && activeChildren.isEmpty()) {
-                            message += if (scope.isCompleted)
-                                ", the test coroutine completed"
-                            else
-                                ", the test coroutine was not completed"
+                        val message = "After waiting for $timeout, " + when {
+                            testBodyFinished.value && activeChildren.isNotEmpty() ->
+                                "there were active child jobs: $activeChildren. " +
+                                    "Use `TestScope.backgroundScope` " +
+                                    "to launch the coroutines that need to be cancelled when the test body finishes"
+                            testBodyFinished.value ->
+                                "the test completed, but only after the timeout"
+                            else ->
+                                "the test body did not run to completion"
                         }
                         timeoutError = UncompletedCoroutinesError(message)
                         cancellationException = CancellationException("The test timed out")
@@ -409,7 +408,6 @@ public fun TestScope.runTest(
 /**
  * Runs [testProcedure], creating a [TestResult].
  */
-@Suppress("NO_ACTUAL_FOR_EXPECT") // actually suppresses `TestResult`
 internal expect fun createTestResult(testProcedure: suspend CoroutineScope.() -> Unit): TestResult
 
 /** A coroutine context element indicating that the coroutine is running inside `runTest`. */
@@ -465,11 +463,11 @@ internal suspend fun <T : AbstractCoroutine<Unit>> CoroutineScope.runTestCorouti
      * 1. Try running the work that the scheduler knows about, both background and foreground.
      *
      * 2. Wait until we run out of foreground work to do. This could mean one of the following:
-     *    * The main coroutine is already completed. This is checked separately; then we leave the procedure.
-     *    * It's switched to another dispatcher that doesn't know about the [TestCoroutineScheduler].
-     *    * Generally, it's waiting for something external (like a network request, or just an arbitrary callback).
-     *    * The test simply hanged.
-     *    * The main coroutine is waiting for some background work.
+     *    - The main coroutine is already completed. This is checked separately; then we leave the procedure.
+     *    - It's switched to another dispatcher that doesn't know about the [TestCoroutineScheduler].
+     *    - Generally, it's waiting for something external (like a network request, or just an arbitrary callback).
+     *    - The test simply hanged.
+     *    - The main coroutine is waiting for some background work.
      *
      * 3. We await progress from things that are not the code under test:
      *    the background work that the scheduler knows about, the external callbacks,
@@ -606,3 +604,11 @@ public fun TestScope.runTestLegacy(
     marker: Int,
     unused2: Any?,
 ): TestResult = runTest(dispatchTimeoutMs = if (marker and 1 != 0) dispatchTimeoutMs else 60_000L, testBody)
+
+// Remove after https://youtrack.jetbrains.com/issue/KT-62423/
+private class AtomicBoolean(initial: Boolean) {
+    private val container = atomic(initial)
+    var value: Boolean
+        get() = container.value
+        set(value: Boolean) { container.value = value }
+}

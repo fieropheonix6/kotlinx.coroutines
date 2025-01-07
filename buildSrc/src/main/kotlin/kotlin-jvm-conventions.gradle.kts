@@ -1,7 +1,3 @@
-/*
- * Copyright 2016-2023 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
- */
-
 // Platform-specific configuration to compile JVM modules
 
 import org.gradle.api.*
@@ -19,6 +15,7 @@ java {
 kotlin {
     compilerOptions {
         jvmTarget = JvmTarget.JVM_1_8
+        configureGlobalKotlinArgumentsAndOptIns()
     }
     jvmToolchain(jdkToolchainVersion)
 }

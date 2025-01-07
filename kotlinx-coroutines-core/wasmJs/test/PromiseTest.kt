@@ -1,9 +1,6 @@
-/*
- * Copyright 2016-2018 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
- */
-
 package kotlinx.coroutines
 
+import kotlinx.coroutines.testing.*
 import kotlin.js.*
 import kotlin.test.*
 
@@ -30,7 +27,7 @@ class PromiseTest : TestBase() {
             deferred.await()
             expectUnreached()
         } catch (e: Throwable) {
-            assertTrue(e is TestException)
+            assertIs<TestException>(e)
             assertEquals("Rejected", e.message)
         }
     }
@@ -86,5 +83,28 @@ class PromiseTest : TestBase() {
             if (seq != 1) error("Unexpected result: $seq")
             null
         }
+    }
+
+    @Test
+    fun testAwaitPromiseRejectedWithNonKotlinException() = GlobalScope.promise {
+        lateinit var r: (JsAny) -> Unit
+        val toAwait = Promise<JsAny?> { _, reject -> r = reject }
+        val throwable = async(start = CoroutineStart.UNDISPATCHED) {
+            assertFails { toAwait.await<JsAny?>() }
+        }
+        r("Rejected".toJsString())
+        assertIs<JsException>(throwable.await())
+    }
+
+    @Test
+    fun testAwaitPromiseRejectedWithKotlinException() = GlobalScope.promise {
+        lateinit var r: (JsAny) -> Unit
+        val toAwait = Promise<JsAny?> { _, reject -> r = reject }
+        val throwable = async(start = CoroutineStart.UNDISPATCHED) {
+            assertFails { toAwait.await<JsAny?>() }
+        }
+        r(RuntimeException("Rejected").toJsReference())
+        assertIs<RuntimeException>(throwable.await())
+        assertEquals("Rejected", throwable.await().message)
     }
 }

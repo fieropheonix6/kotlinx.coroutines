@@ -1,6 +1,3 @@
-/*
- * Copyright 2016-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
- */
 @file:JvmMultifileClass
 @file:JvmName("ChannelsKt")
 @file:Suppress("unused")
@@ -21,7 +18,7 @@ import kotlin.jvm.*
  * Safe to remove in 1.9.0 as was inline before.
  */
 @ObsoleteCoroutinesApi
-@Suppress("DEPRECATION")
+@Suppress("DEPRECATION_ERROR")
 @Deprecated(level = DeprecationLevel.ERROR, message = "BroadcastChannel is deprecated in the favour of SharedFlow and is no longer supported")
 public inline fun <E, R> BroadcastChannel<E>.consume(block: ReceiveChannel<E>.() -> R): R {
     val channel = openSubscription()
@@ -56,7 +53,7 @@ internal fun consumesAll(vararg channels: ReceiveChannel<*>): CompletionHandler 
                 if (exception == null) {
                     exception = e
                 } else {
-                    exception.addSuppressedThrowable(e)
+                    exception.addSuppressed(e)
                 }
             }
         exception?.let { throw it }

@@ -1,6 +1,3 @@
-/*
- * Copyright 2016-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
- */
 @file:Suppress("DEPRECATION_ERROR")
 
 package kotlinx.coroutines
@@ -8,6 +5,7 @@ package kotlinx.coroutines
 import kotlinx.coroutines.CoroutineStart.*
 import kotlinx.coroutines.intrinsics.*
 import kotlin.coroutines.*
+import kotlinx.coroutines.internal.ScopeCoroutine
 
 /**
  * Abstract base class for implementation of coroutines in coroutine builders.
@@ -19,10 +17,10 @@ import kotlin.coroutines.*
  *
  * The following methods are available for override:
  *
- * * [onStart] is invoked when the coroutine was created in non-active state and is being [started][Job.start].
- * * [onCancelling] is invoked as soon as the coroutine starts being cancelled for any reason (or completes).
- * * [onCompleted] is invoked when the coroutine completes with a value.
- * * [onCancelled] in invoked when the coroutine completes with an exception (cancelled).
+ * - [onStart] is invoked when the coroutine was created in non-active state and is being [started][Job.start].
+ * - [onCancelling] is invoked as soon as the coroutine starts being cancelled for any reason (or completes).
+ * - [onCompleted] is invoked when the coroutine completes with a value.
+ * - [onCancelled] in invoked when the coroutine completes with an exception (cancelled).
  *
  * @param parentContext the context of the parent coroutine.
  * @param initParentJob specifies whether the parent-child relationship should be instantiated directly
@@ -33,6 +31,7 @@ import kotlin.coroutines.*
  *
  * @suppress **This an internal API and should not be used from general code.**
  */
+@OptIn(InternalForInheritanceCoroutinesApi::class)
 @InternalCoroutinesApi
 public abstract class AbstractCoroutine<in T>(
     parentContext: CoroutineContext,
@@ -102,6 +101,15 @@ public abstract class AbstractCoroutine<in T>(
         afterResume(state)
     }
 
+    /**
+     * Invoked when the corresponding `AbstractCoroutine` was **conceptually** resumed, but not mechanically.
+     * Currently, this function only invokes `resume` on the underlying continuation for [ScopeCoroutine]
+     * or does nothing otherwise.
+     *
+     * Examples of resumes:
+     * - `afterCompletion` calls when the corresponding `Job` changed its state (i.e. got cancelled)
+     * - [AbstractCoroutine.resumeWith] was invoked
+     */
     protected open fun afterResume(state: Any?): Unit = afterCompletion(state)
 
     internal final override fun handleOnCompletionException(exception: Throwable) {
@@ -117,10 +125,10 @@ public abstract class AbstractCoroutine<in T>(
      * Starts this coroutine with the given code [block] and [start] strategy.
      * This function shall be invoked at most once on this coroutine.
      * 
-     * * [DEFAULT] uses [startCoroutineCancellable].
-     * * [ATOMIC] uses [startCoroutine].
-     * * [UNDISPATCHED] uses [startCoroutineUndispatched].
-     * * [LAZY] does nothing.
+     * - [DEFAULT] uses [startCoroutineCancellable].
+     * - [ATOMIC] uses [startCoroutine].
+     * - [UNDISPATCHED] uses [startCoroutineUndispatched].
+     * - [LAZY] does nothing.
      */
     public fun <R> start(start: CoroutineStart, receiver: R, block: suspend R.() -> T) {
         start(block, receiver, this)

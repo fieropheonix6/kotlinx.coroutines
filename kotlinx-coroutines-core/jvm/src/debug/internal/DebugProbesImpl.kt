@@ -1,7 +1,3 @@
-/*
- * Copyright 2016-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
- */
-
 package kotlinx.coroutines.debug.internal
 
 import kotlinx.atomicfu.*
@@ -44,7 +40,7 @@ internal object DebugProbesImpl {
     private val sequenceNumber = atomic(0L)
 
     internal var sanitizeStackTraces: Boolean = true
-    internal var enableCreationStackTraces: Boolean = true
+    internal var enableCreationStackTraces: Boolean = false
     public var ignoreCoroutinesWithEmptyContext: Boolean = true
 
     /*
@@ -55,7 +51,7 @@ internal object DebugProbesImpl {
 
     @Suppress("UNCHECKED_CAST")
     private fun getDynamicAttach(): Function1<Boolean, Unit>? = runCatching {
-        val clz = Class.forName("kotlinx.coroutines.debug.internal.ByteBuddyDynamicAttach")
+        val clz = Class.forName("kotlinx.coroutines.debug.ByteBuddyDynamicAttach")
         val ctor = clz.constructors[0]
         ctor.newInstance() as Function1<Boolean, Unit>
     }.getOrNull()

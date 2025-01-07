@@ -1,7 +1,3 @@
-/*
- * Copyright 2016-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
- */
-
 import org.gradle.api.*
 import org.gradle.api.artifacts.dsl.*
 import org.gradle.api.artifacts.repositories.*
@@ -107,13 +103,13 @@ private fun Project.checkRedirect(repositories: RepositoryHandler, containerName
 private fun Project.configureYarnAndNodeRedirects() {
     if (CacheRedirector.isEnabled) {
         val yarnRootExtension = extensions.findByType<YarnRootExtension>()
-        if (yarnRootExtension != null) {
-            yarnRootExtension.downloadBaseUrl = CacheRedirector.maybeRedirect(yarnRootExtension.downloadBaseUrl)
+        yarnRootExtension?.downloadBaseUrl?.let {
+            yarnRootExtension.downloadBaseUrl = CacheRedirector.maybeRedirect(it)
         }
 
         val nodeJsExtension = rootProject.extensions.findByType<NodeJsRootExtension>()
-        if (nodeJsExtension != null) {
-            nodeJsExtension.nodeDownloadBaseUrl = CacheRedirector.maybeRedirect(nodeJsExtension.nodeDownloadBaseUrl)
+        nodeJsExtension?.nodeDownloadBaseUrl?.let {
+            nodeJsExtension.nodeDownloadBaseUrl = CacheRedirector.maybeRedirect(it)
         }
     }
 }
@@ -140,23 +136,6 @@ object CacheRedirector {
     @JvmStatic
     fun configureJsPackageManagers(project: Project) {
         project.configureYarnAndNodeRedirects()
-    }
-
-    /**
-     * Temporary repositories to depend on until GC milestone 4 in KGP
-     * and stable Node release. Safe to remove when its removal does not break WASM tests.
-     */
-    @JvmStatic
-    fun configureWasmNodeRepositories(project: Project) {
-        val extension = project.extensions.findByType<NodeJsRootExtension>()
-        if (extension != null) {
-            extension.nodeVersion = "21.0.0-v8-canary202309167e82ab1fa2"
-            extension.nodeDownloadBaseUrl = "https://nodejs.org/download/v8-canary"
-        }
-
-        project.tasks.withType<KotlinNpmInstallTask>().configureEach {
-            args.add("--ignore-engines")
-        }
     }
 
     @JvmStatic

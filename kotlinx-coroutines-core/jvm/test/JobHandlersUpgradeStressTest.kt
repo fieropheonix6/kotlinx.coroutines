@@ -1,9 +1,6 @@
-/*
- * Copyright 2016-2018 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
- */
-
 package kotlinx.coroutines
 
+import kotlinx.coroutines.testing.*
 import kotlinx.atomicfu.*
 import java.util.*
 import java.util.concurrent.*
@@ -33,6 +30,9 @@ class JobHandlersUpgradeStressTest : TestBase() {
         val state = atomic(0)
     }
 
+    /**
+     * Tests handlers not being invoked more than once.
+     */
     @Test
     fun testStress() {
         println("--- JobHandlersUpgradeStressTest")

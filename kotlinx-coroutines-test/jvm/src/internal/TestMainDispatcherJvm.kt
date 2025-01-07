@@ -1,7 +1,3 @@
-/*
- * Copyright 2016-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
- */
-
 package kotlinx.coroutines.test.internal
 
 import kotlinx.coroutines.*
@@ -12,8 +8,23 @@ internal class TestMainDispatcherFactory : MainDispatcherFactory {
     override fun createDispatcher(allFactories: List<MainDispatcherFactory>): MainCoroutineDispatcher {
         val otherFactories = allFactories.filter { it !== this }
         val secondBestFactory = otherFactories.maxByOrNull { it.loadPriority } ?: MissingMainCoroutineDispatcherFactory
-        val dispatcher = secondBestFactory.tryCreateDispatcher(otherFactories)
-        return TestMainDispatcher(dispatcher)
+        /* Do not immediately create the alternative dispatcher, as with `SUPPORT_MISSING` set to `false`,
+        it will throw an exception. Instead, create it lazily. */
+        return TestMainDispatcher({
+            val dispatcher = try {
+                secondBestFactory.tryCreateDispatcher(otherFactories)
+            } catch (e: Throwable) {
+                reportMissingMainCoroutineDispatcher(e)
+            }
+            if (dispatcher.isMissing()) {
+                reportMissingMainCoroutineDispatcher(runCatching {
+                    // attempt to dispatch something to the missing dispatcher to trigger the exception.
+                    dispatcher.dispatch(dispatcher, Runnable { })
+                }.exceptionOrNull()) // can not be null, but it does not matter.
+            } else {
+                dispatcher
+            }
+        })
     }
 
     /**
@@ -28,4 +39,14 @@ internal actual fun Dispatchers.getTestMainDispatcher(): TestMainDispatcher {
     val mainDispatcher = Main
     require(mainDispatcher is TestMainDispatcher) { "TestMainDispatcher is not set as main dispatcher, have $mainDispatcher instead." }
     return mainDispatcher
+}
+
+private fun reportMissingMainCoroutineDispatcher(e: Throwable? = null): Nothing {
+    throw IllegalStateException(
+        "Dispatchers.Main was accessed when the platform dispatcher was absent " +
+            "and the test dispatcher was unset. Please make sure that Dispatchers.setMain() is called " +
+            "before accessing Dispatchers.Main and that Dispatchers.Main is not accessed after " +
+            "Dispatchers.resetMain().",
+        e
+    )
 }

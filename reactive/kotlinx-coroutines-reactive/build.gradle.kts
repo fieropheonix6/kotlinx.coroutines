@@ -1,7 +1,3 @@
-/*
- * Copyright 2016-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
- */
-
 plugins {
     // apply plugin to use autocomplete for Kover DSL
     id("org.jetbrains.kotlinx.kover")
@@ -40,14 +36,16 @@ externalDocumentationLink(
     url = "https://www.reactive-streams.org/reactive-streams-$reactiveStreamsVersion-javadoc/"
 )
 
-koverReport {
-    filters {
-        excludes {
-            classes(
-                "kotlinx.coroutines.reactive.FlowKt", // Deprecated
-                "kotlinx.coroutines.reactive.FlowKt__MigrationKt", // Deprecated
-                "kotlinx.coroutines.reactive.ConvertKt" // Deprecated
-            )
+kover {
+    reports {
+        filters {
+            excludes {
+                classes(
+                    "kotlinx.coroutines.reactive.FlowKt", // Deprecated
+                    "kotlinx.coroutines.reactive.FlowKt__MigrationKt", // Deprecated
+                    "kotlinx.coroutines.reactive.ConvertKt" // Deprecated
+                )
+            }
         }
     }
 }

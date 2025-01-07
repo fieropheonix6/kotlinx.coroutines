@@ -1,13 +1,58 @@
-/*
- * Copyright 2016-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
- */
-
 package kotlinx.coroutines.channels
 
+import kotlinx.coroutines.testing.*
 import kotlinx.coroutines.*
 import kotlin.test.*
 
 class BufferedChannelTest : TestBase() {
+
+    /** Tests that a buffered channel does not consume enough memory to fail with an OOM. */
+    @Test
+    fun testMemoryConsumption() = runTest {
+        val largeChannel = Channel<Int>(Int.MAX_VALUE / 2)
+        repeat(10_000) {
+            largeChannel.send(it)
+        }
+        repeat(10_000) {
+            val element = largeChannel.receive()
+            assertEquals(it, element)
+        }
+    }
+
+    @Test
+    fun testIteratorHasNextIsIdempotent() = runTest {
+        val q = Channel<Int>()
+        check(q.isEmpty)
+        val iter = q.iterator()
+        expect(1)
+        val sender = launch {
+            expect(4)
+            q.send(1) // sent
+            expect(10)
+            q.close()
+            expect(11)
+        }
+        expect(2)
+        val receiver = launch {
+            expect(5)
+            check(iter.hasNext())
+            expect(6)
+            check(iter.hasNext())
+            expect(7)
+            check(iter.hasNext())
+            expect(8)
+            check(iter.next() == 1)
+            expect(9)
+            check(!iter.hasNext())
+            expect(12)
+        }
+        expect(3)
+        sender.join()
+        receiver.join()
+        check(q.isClosedForReceive)
+        finish(13)
+    }
+
     @Test
     fun testSimple() = runTest {
         val q = Channel<Int>(1)

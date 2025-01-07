@@ -1,7 +1,3 @@
-/*
- * Copyright 2016-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
- */
-
 @file:Suppress("FunctionName")
 
 package kotlinx.coroutines
@@ -28,8 +24,14 @@ public actual fun CancellationException(message: String?, cause: Throwable?) : C
 internal actual class JobCancellationException public actual constructor(
     message: String,
     cause: Throwable?,
-    @JvmField @Transient internal actual val job: Job
+    job: Job
 ) : CancellationException(message), CopyableThrowable<JobCancellationException> {
+
+    @Transient
+    private val _job: Job? = job
+
+    // The safest option for transient -- return something that meanigfully reject any attemp to interact with the job
+    internal actual val job get() = _job ?: NonCancellable
 
     init {
         if (cause != null) initCause(cause)
@@ -65,10 +67,10 @@ internal actual class JobCancellationException public actual constructor(
     override fun equals(other: Any?): Boolean =
         other === this ||
             other is JobCancellationException && other.message == message && other.job == job && other.cause == cause
-    override fun hashCode(): Int =
-        (message!!.hashCode() * 31 + job.hashCode()) * 31 + (cause?.hashCode() ?: 0)
-}
 
-@Suppress("NOTHING_TO_INLINE")
-internal actual inline fun Throwable.addSuppressedThrowable(other: Throwable) =
-    addSuppressed(other)
+    override fun hashCode(): Int {
+        // since job is transient it is indeed nullable after deserialization
+        @Suppress("UNNECESSARY_SAFE_CALL")
+        return (message!!.hashCode() * 31 + (job?.hashCode() ?: 0)) * 31 + (cause?.hashCode() ?: 0)
+    }
+}

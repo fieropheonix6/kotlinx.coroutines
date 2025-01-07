@@ -1,4 +1,5 @@
 <!--- TEST_NAME ChannelsGuideTest -->
+<contribute-url>https://github.com/Kotlin/kotlinx.coroutines/edit/master/docs/topics/</contribute-url>
 
 [//]: # (title: Channels)
 
@@ -19,7 +20,8 @@ fun main() = runBlocking {
 //sampleStart
     val channel = Channel<Int>()
     launch {
-        // this might be heavy CPU-consuming computation or async logic, we'll just send five squares
+        // this might be heavy CPU-consuming computation or async logic, 
+        // we'll just send five squares
         for (x in 1..5) channel.send(x * x)
     }
     // here we print five received integers:
@@ -29,10 +31,10 @@ fun main() = runBlocking {
 }
 ```
 {kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
-
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-channel-01.kt).
+<!--- KNIT example-channel-01.kt -->
+> You can get the full code [here](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-channel-01.kt).
 >
-{type="note"}
+{style="note"}
 
 The output of this code is:
 
@@ -75,10 +77,10 @@ fun main() = runBlocking {
 }
 ```
 {kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
-
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-channel-02.kt).
+<!--- KNIT example-channel-02.kt -->
+> You can get the full code [here](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-channel-02.kt).
 >
-{type="note"}
+{style="note"}
 
 <!--- TEST 
 1
@@ -103,12 +105,12 @@ and an extension function [consumeEach], that replaces a `for` loop on the consu
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
 
+//sampleStart
 fun CoroutineScope.produceSquares(): ReceiveChannel<Int> = produce {
     for (x in 1..5) send(x * x)
 }
 
 fun main() = runBlocking {
-//sampleStart
     val squares = produceSquares()
     squares.consumeEach { println(it) }
     println("Done!")
@@ -116,10 +118,10 @@ fun main() = runBlocking {
 }
 ```
 {kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
-
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-channel-03.kt).
+<!--- KNIT example-channel-03.kt -->
+> You can get the full code [here](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-channel-03.kt).
 >
-{type="note"}
+{style="note"}
 
 <!--- TEST 
 1
@@ -180,10 +182,10 @@ fun CoroutineScope.square(numbers: ReceiveChannel<Int>): ReceiveChannel<Int> = p
 }
 ```
 {kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
-
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-channel-04.kt).
+<!--- KNIT example-channel-04.kt -->
+> You can get the full code [here](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-channel-04.kt).
 >
-{type="note"}
+{style="note"}
 
 <!--- TEST 
 1
@@ -198,7 +200,7 @@ Done!
 > so that we can rely on [structured concurrency](composing-suspending-functions.md#structured-concurrency-with-async) to make
 > sure that we don't have lingering global coroutines in our application.
 >
-{type="note"}
+{style="note"}
 
 ## Prime numbers with pipeline
 
@@ -224,7 +226,7 @@ fun CoroutineScope.filter(numbers: ReceiveChannel<Int>, prime: Int) = produce<In
 Now we build our pipeline by starting a stream of numbers from 2, taking a prime number from the current channel, 
 and launching new pipeline stage for each prime number found:
  
-```Plain Text
+```
 numbersFrom(2) -> filter(2) -> filter(3) -> filter(5) -> filter(7) ... 
 ```
  
@@ -264,10 +266,10 @@ fun CoroutineScope.filter(numbers: ReceiveChannel<Int>, prime: Int) = produce<In
 }
 ```
 {kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
-
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-channel-05.kt).
+<!--- KNIT example-channel-05.kt -->
+> You can get the full code [here](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-channel-05.kt).
 >
-{type="note"}
+{style="note"}
 
 The output of this code is:
 
@@ -358,12 +360,12 @@ fun CoroutineScope.launchProcessor(id: Int, channel: ReceiveChannel<Int>) = laun
 }
 ```
 {kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
-
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-channel-06.kt).
+<!--- KNIT example-channel-06.kt -->
+> You can get the full code [here](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-channel-06.kt).
 >
-{type="note"}
+{style="note"}
 
-The output will be similar to the the following one, albeit the processor ids that receive
+The output will be similar to the following one, albeit the processor ids that receive
 each specific integer may be different:
 
 ```text
@@ -433,10 +435,10 @@ suspend fun sendString(channel: SendChannel<String>, s: String, time: Long) {
 }
 ```
 {kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
-
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-channel-07.kt).
+<!--- KNIT example-channel-07.kt -->
+> You can get the full code [here](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-channel-07.kt).
 >
-{type="note"}
+{style="note"}
 
 The output is:
 
@@ -483,10 +485,10 @@ fun main() = runBlocking<Unit> {
 }
 ```
 {kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
-
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-channel-08.kt).
+<!--- KNIT example-channel-08.kt -->
+> You can get the full code [here](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-channel-08.kt).
 >
-{type="note"}
+{style="note"}
 
 It prints "sending" _five_ times using a buffered channel with capacity of _four_:
 
@@ -536,10 +538,10 @@ suspend fun player(name: String, table: Channel<Ball>) {
 //sampleEnd
 ```
 {kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
-
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-channel-09.kt).
+<!--- KNIT example-channel-09.kt -->
+> You can get the full code [here](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-channel-09.kt).
 >
-{type="note"}
+{style="note"}
 
 The "ping" coroutine is started first, so it is the first one to receive the ball. Even though "ping"
 coroutine immediately starts receiving the ball again after sending it back to the table, the ball gets
@@ -575,45 +577,45 @@ import kotlinx.coroutines.channels.*
 
 //sampleStart
 fun main() = runBlocking<Unit> {
-    val tickerChannel = ticker(delayMillis = 100, initialDelayMillis = 0) // create ticker channel
+    val tickerChannel = ticker(delayMillis = 200, initialDelayMillis = 0) // create a ticker channel
     var nextElement = withTimeoutOrNull(1) { tickerChannel.receive() }
     println("Initial element is available immediately: $nextElement") // no initial delay
 
-    nextElement = withTimeoutOrNull(50) { tickerChannel.receive() } // all subsequent elements have 100ms delay
-    println("Next element is not ready in 50 ms: $nextElement")
+    nextElement = withTimeoutOrNull(100) { tickerChannel.receive() } // all subsequent elements have 200ms delay
+    println("Next element is not ready in 100 ms: $nextElement")
 
-    nextElement = withTimeoutOrNull(60) { tickerChannel.receive() }
-    println("Next element is ready in 100 ms: $nextElement")
+    nextElement = withTimeoutOrNull(120) { tickerChannel.receive() }
+    println("Next element is ready in 200 ms: $nextElement")
 
     // Emulate large consumption delays
-    println("Consumer pauses for 150ms")
-    delay(150)
+    println("Consumer pauses for 300ms")
+    delay(300)
     // Next element is available immediately
     nextElement = withTimeoutOrNull(1) { tickerChannel.receive() }
     println("Next element is available immediately after large consumer delay: $nextElement")
     // Note that the pause between `receive` calls is taken into account and next element arrives faster
-    nextElement = withTimeoutOrNull(60) { tickerChannel.receive() } 
-    println("Next element is ready in 50ms after consumer pause in 150ms: $nextElement")
+    nextElement = withTimeoutOrNull(120) { tickerChannel.receive() }
+    println("Next element is ready in 100ms after consumer pause in 300ms: $nextElement")
 
     tickerChannel.cancel() // indicate that no more elements are needed
 }
 //sampleEnd
 ```
 {kotlin-runnable="true" kotlin-min-compiler-version="1.3"}
-
-> You can get the full code [here](../../kotlinx-coroutines-core/jvm/test/guide/example-channel-10.kt).
+<!--- KNIT example-channel-10.kt -->
+> You can get the full code [here](https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/test/guide/example-channel-10.kt).
 >
-{type="note"}
+{style="note"}
 
 It prints following lines:
 
 ```text
 Initial element is available immediately: kotlin.Unit
-Next element is not ready in 50 ms: null
-Next element is ready in 100 ms: kotlin.Unit
-Consumer pauses for 150ms
+Next element is not ready in 100 ms: null
+Next element is ready in 200 ms: kotlin.Unit
+Consumer pauses for 300ms
 Next element is available immediately after large consumer delay: kotlin.Unit
-Next element is ready in 50ms after consumer pause in 150ms: kotlin.Unit
+Next element is ready in 100ms after consumer pause in 300ms: kotlin.Unit
 ```
 
 <!--- TEST -->

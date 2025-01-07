@@ -1,7 +1,3 @@
-/*
- * Copyright 2016-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
- */
-
 package kotlinx.coroutines.validator
 
 import org.junit.Test
@@ -52,10 +48,10 @@ class MavenPublicationMetaInfValidator {
     private fun JarFile.checkMetaInfStructure(expected: Set<String>) {
         val actual = HashSet<String>()
         for (e in entries()) {
-            if (e.isDirectory() || !e.realName.contains("META-INF")) {
+            if (e.isDirectory() || !e.name.contains("META-INF")) {
                 continue
             }
-            val partialName = e.realName.substringAfter("META-INF/")
+            val partialName = e.name.substringAfter("META-INF/")
             actual.add(partialName)
         }
 

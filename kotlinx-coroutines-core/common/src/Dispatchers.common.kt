@@ -1,7 +1,3 @@
-/*
- * Copyright 2016-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
- */
-
 package kotlinx.coroutines
 
 import kotlin.coroutines.*
@@ -56,11 +52,11 @@ public expect object Dispatchers {
      * For example, the following code:
      * ```
      * withContext(Dispatchers.Unconfined) {
-     *    println(1)
-     *    launch(Dispatchers.Unconfined) { // Nested unconfined
-     *        println(2)
-     *    }
-     *    println(3)
+     *     println(1)
+     *     launch(Dispatchers.Unconfined) { // Nested unconfined
+     *         println(2)
+     *     }
+     *     println(3)
      * }
      * println("Done")
      * ```

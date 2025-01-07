@@ -1,7 +1,3 @@
-/*
- * Copyright 2016-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
- */
-
 package kotlinx.coroutines
 
 import kotlinx.coroutines.internal.*
@@ -42,12 +38,12 @@ private fun CoroutineContext.hasCopyableElements(): Boolean =
 /**
  * Folds two contexts properly applying [CopyableThreadContextElement] rules when necessary.
  * The rules are the following:
- * * If neither context has CTCE, the sum of two contexts is returned
- * * Every CTCE from the left-hand side context that does not have a matching (by key) element from right-hand side context
+ * - If neither context has CTCE, the sum of two contexts is returned
+ * - Every CTCE from the left-hand side context that does not have a matching (by key) element from right-hand side context
  *   is [copied][CopyableThreadContextElement.copyForChild] if [isNewCoroutine] is `true`.
- * * Every CTCE from the left-hand side context that has a matching element in the right-hand side context is [merged][CopyableThreadContextElement.mergeForChild]
- * * Every CTCE from the right-hand side context that hasn't been merged is copied
- * * Everything else is added to the resulting context as is.
+ * - Every CTCE from the left-hand side context that has a matching element in the right-hand side context is [merged][CopyableThreadContextElement.mergeForChild]
+ * - Every CTCE from the right-hand side context that hasn't been merged is copied
+ * - Everything else is added to the resulting context as is.
  */
 private fun foldCopies(originalContext: CoroutineContext, appendContext: CoroutineContext, isNewCoroutine: Boolean): CoroutineContext {
     // Do we have something to copy left-hand side?
@@ -189,14 +185,15 @@ internal actual class UndispatchedCoroutine<in T>actual constructor (
      * `withContext` for the sake of logging, MDC, tracing etc., meaning that there exists thousands of
      * undispatched coroutines.
      * Each access to Java's [ThreadLocal] leaves a footprint in the corresponding Thread's `ThreadLocalMap`
-     * that is cleared automatically as soon as the associated thread-local (-> UndispatchedCoroutine) is garbage collected.
+     * that is cleared automatically as soon as the associated thread-local (-> UndispatchedCoroutine) is garbage collected
+     * when either the corresponding thread is GC'ed or it cleans up its stale entries on other TL accesses.
      * When such coroutines are promoted to old generation, `ThreadLocalMap`s become bloated and an arbitrary accesses to thread locals
      * start to consume significant amount of CPU because these maps are open-addressed and cleaned up incrementally on each access.
      * (You can read more about this effect as "GC nepotism").
      *
      * To avoid that, we attempt to narrow down the lifetime of this thread local as much as possible:
-     * * It's never accessed when we are sure there are no thread context elements
-     * * It's cleaned up via [ThreadLocal.remove] as soon as the coroutine is suspended or finished.
+     * - It's never accessed when we are sure there are no thread context elements
+     * - It's cleaned up via [ThreadLocal.remove] as soon as the coroutine is suspended or finished.
      */
     private val threadStateToRecover = ThreadLocal<Pair<CoroutineContext, Any?>>()
 
@@ -257,17 +254,25 @@ internal actual class UndispatchedCoroutine<in T>actual constructor (
         }
     }
 
+    override fun afterCompletionUndispatched() {
+        clearThreadLocal()
+    }
+
     override fun afterResume(state: Any?) {
+        clearThreadLocal()
+        // resume undispatched -- update context but stay on the same dispatcher
+        val result = recoverResult(state, uCont)
+        withContinuationContext(uCont, null) {
+            uCont.resumeWith(result)
+        }
+    }
+
+    private fun clearThreadLocal() {
         if (threadLocalIsSet) {
             threadStateToRecover.get()?.let { (ctx, value) ->
                 restoreThreadContext(ctx, value)
             }
             threadStateToRecover.remove()
-        }
-        // resume undispatched -- update context but stay on the same dispatcher
-        val result = recoverResult(state, uCont)
-        withContinuationContext(uCont, null) {
-            uCont.resumeWith(result)
         }
     }
 }

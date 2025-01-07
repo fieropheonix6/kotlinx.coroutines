@@ -1,9 +1,6 @@
-/*
- * Copyright 2016-2018 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
- */
-
 package ordered.tests
 
+import kotlinx.coroutines.testing.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.test.*
 import org.junit.*
@@ -38,7 +35,7 @@ open class FirstMockedMainTest : TestBase() {
             component.launchSomething()
             throw component.caughtException
         } catch (e: IllegalStateException) {
-            assertTrue(e.message!!.contains("Dispatchers.setMain from kotlinx-coroutines-test"))
+            assertTrue(e.message!!.contains("Dispatchers.setMain"))
         }
     }
 }
