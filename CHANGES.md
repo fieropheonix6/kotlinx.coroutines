@@ -1,5 +1,9 @@
 # Change log for kotlinx.coroutines
 
+## Version 1.11.0-rc02
+
+Restored binary compatibility with 1.10.2 and older versions on Wasm/JS for usages of `Promise`-related functions (#4661).
+
 ## Version 1.11.0-rc01
 
 ### Various
