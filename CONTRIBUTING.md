@@ -37,8 +37,7 @@ so do familiarize yourself with the following guidelines.
   * The `master` branch contains the sources of the most recently released version.
   * Base your PRs against the `develop` branch.
   * The `develop` branch is pushed to the `master` branch during release.
-  * Documentation in markdown files can be updated directly in the `master` branch, 
-    unless the documentation is in the source code, and the patch changes line numbers.
+  * Documentation can be updated directly in the `master` branch.
 * If you fix documentation:
   * After fixing/changing code examples in the [`docs`](docs) folder or updating any references in the markdown files
     run the [Knit tool](#running-the-knit-tool) and commit the resulting changes as well. 
