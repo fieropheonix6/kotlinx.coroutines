@@ -10,8 +10,8 @@ import kotlin.jvm.*
 import kotlinx.coroutines.flow.internal.unsafeFlow as flow
 
 /**
- * Catches exceptions in the flow completion and calls a specified [action] with
- * the caught exception. This operator is *transparent* to exceptions that occur
+ * If the upstream flow completes with an exception, this operator catches that exception and calls the specified [action] with it.
+ * This operator is *transparent* to exceptions that occur
  * in downstream flow and does not catch exceptions that are thrown to cancel the flow.
  *
  * For example:
@@ -26,6 +26,9 @@ import kotlinx.coroutines.flow.internal.unsafeFlow as flow
  *
  * Conceptually, the action of `catch` operator is similar to wrapping the code of upstream flows with
  * `try { ... } catch (e: Throwable) { action(e) }`.
+ *
+ * After the flow has completed with an exception, it cannot emit any more values, and fallback values may be emitted
+ * downstream from the [action] block instead.
  *
  * Any exception in the [action] code itself proceeds downstream where it can be
  * caught by further `catch` operators if needed. If a particular exception does not need to be
